@@ -2,6 +2,7 @@ class HashTableEntry:
     """
     Linked List hash table key/value pair
     """
+
     def __init__(self, key, value):
         self.key = key
         self.value = value
@@ -22,7 +23,8 @@ class HashTable:
 
     def __init__(self, capacity):
         # Your code here
-
+        self.buckets = [None] * capacity
+        self.capacity = capacity 
 
     def get_num_slots(self):
         """
@@ -36,7 +38,6 @@ class HashTable:
         """
         # Your code here
 
-
     def get_load_factor(self):
         """
         Return the load factor for this hash table.
@@ -44,7 +45,6 @@ class HashTable:
         Implement this.
         """
         # Your code here
-
 
     def fnv1(self, key):
         """
@@ -55,22 +55,37 @@ class HashTable:
 
         # Your code here
 
-
     def djb2(self, key):
         """
         DJB2 hash, 32-bit
 
         Implement this, and/or FNV-1.
+
+        The algorithm for our hash function comes from computer scientist Dan Bernstein.
+        It uses bit manipulation and prime numbers to create a hash index from a string.
+
         """
         # Your code here
+        
+        # set the hash
+        hash = 5381
 
+        # encode the string
+        byte_arr = key.encode('utf-8')
+        
+        # hash each index in encoded_string
 
+        for byte in byte_arr:
+            hash = ((hash * 33) ^ byte) % 0x100000000 # 65536
+            # using the modulus keeps 32-bit so int doesnt overflow
+        return hash
+    
     def hash_index(self, key):
         """
         Take an arbitrary key and return a valid integer index
         between within the storage capacity of the hash table.
         """
-        #return self.fnv1(key) % self.capacity
+        # return self.fnv1(key) % self.capacity
         return self.djb2(key) % self.capacity
 
     def put(self, key, value):
@@ -81,8 +96,13 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
 
+        _hash = self.djb2(key)
+        _index = self.hash_index(key)
+
+        entry = HashTableEntry(key, value)
+              
+        self.buckets[_index] = entry
 
     def delete(self, key):
         """
@@ -93,6 +113,30 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        _hash = self.djb2(key)
+        _index = self.hash_index(key)
+
+        # check to see if the entry exists
+        _exists = self.buckets[_index]
+        # check to see if exists is not None
+        if _exists:
+            last = None
+            # while exists is not None
+            while _exists:
+                # if we find a match... remove it..
+                if _exists.key == key:
+                    # we found something
+                    if last:
+                        last.next = _exists.next
+                    else:
+                        self.buckets[_index] = _exists.next
+                
+                # if we made it this far there needs to be a swap so the newer item is stored...
+                last = _exists
+                _exists = _exists.next
+        
+            
+
 
 
     def get(self, key):
@@ -103,8 +147,22 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        _hash = self.djb2(key)
+        _index = self.hash_index(key)
 
+        _lookup = self.buckets[_index]
+
+        if _lookup:
+            while _lookup:
+                ## we found something
+                if _lookup.key == key:
+                    return _lookup.value
+                    
+                _lookup = _lookup.next;
+        
+        return None
+
+        # Your code here
 
     def resize(self, new_capacity):
         """
@@ -114,7 +172,6 @@ class HashTable:
         Implement this.
         """
         # Your code here
-
 
 
 if __name__ == "__main__":
