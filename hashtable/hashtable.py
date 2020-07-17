@@ -1,7 +1,10 @@
+
+
 class HashTableEntry:
     """
     Linked List hash table key/value pair
     """
+
     def __init__(self, key, value):
         self.key = key
         self.value = value
@@ -22,7 +25,8 @@ class HashTable:
 
     def __init__(self, capacity):
         # Your code here
-
+        self.buckets = [LinkedList()] * capacity
+        self.capacity = capacity
 
     def get_num_slots(self):
         """
@@ -34,8 +38,7 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
-
+        return self.capacity
 
     def get_load_factor(self):
         """
@@ -43,8 +46,8 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
 
+        # Your code here
 
     def fnv1(self, key):
         """
@@ -55,22 +58,32 @@ class HashTable:
 
         # Your code here
 
-
     def djb2(self, key):
         """
         DJB2 hash, 32-bit
 
         Implement this, and/or FNV-1.
+
+        The algorithm for our hash function comes from computer scientist Dan Bernstein.
+        It uses bit manipulation and prime numbers to create a hash index from a string.
+
         """
         # Your code here
 
+        # set the hash
+        hash = 5381
+
+        for char in key:
+            hash = ((hash << 5) + hash) + ord(char)
+
+        return hash & 0xFFFFFFFF
 
     def hash_index(self, key):
         """
         Take an arbitrary key and return a valid integer index
         between within the storage capacity of the hash table.
         """
-        #return self.fnv1(key) % self.capacity
+        # return self.fnv1(key) % self.capacity
         return self.djb2(key) % self.capacity
 
     def put(self, key, value):
@@ -81,8 +94,31 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
 
+        # hash will look at key and make an index
+        _hash = self.djb2(key)
+        _index = self.hash_index(key)
+
+        # create a new node from the key, value pair
+        new_node = Node(key, value)
+
+        # check to see if a node exists in the spot we want to place this node
+        existing_node = self.buckets[_index].head
+
+        if existing_node:
+            last_node = None
+            while existing_node:
+                if existing_node.key == key:
+                    existing_node.value = value
+                    return
+                last_node = existing_node
+                existing_node = existing_node.next
+
+            last_node.next = new_node
+        else:
+            self.buckets[_index].append(new_node)
+
+        return self.buckets[_index].head
 
     def delete(self, key):
         """
@@ -93,7 +129,27 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        _hash = self.djb2(key)
+        _index = self.hash_index(key)
 
+        # check to see if the entry exists
+        _exists = self.buckets[_index].head
+        # check to see if exists is not None
+        if _exists:
+            last = None
+            # while exists is not None
+            while _exists:
+                # if we find a match... remove it..
+                if _exists.key == key:
+                    # we found something
+                    if last:
+                        last.next = _exists.next
+                    else:
+                        self.buckets[_index].remove(_exists.next)
+
+                # if we made it this far there needs to be a swap so the newer item is stored...
+                last = _exists
+                _exists = _exists.next
 
     def get(self, key):
         """
@@ -103,8 +159,24 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        _hash = self.djb2(key)
+        _index = self.hash_index(key)
 
+        _lookup = self.buckets[_index].head # give me the head node from the list of the index given.
+
+        # if the head exists.
+        if _lookup is not None:
+            # while there is still something in the pile.
+            while _lookup is not None:
+                # we found something
+                if _lookup.key == key:
+                    return _lookup.value
+
+                _lookup = _lookup.next
+
+        return None
+
+        # Your code here
 
     def resize(self, new_capacity):
         """
@@ -114,7 +186,75 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        new_table = HashTable(new_capacity)
+        # looking at each of the buckets...
+        for i in range(len(self.buckets)):
+            # for each key value pair in the buckets head
+            node = self.buckets[i].head
 
+            while node.next is not None:
+                    new_table.put(node.key, node.value)
+                    node = node.next
+
+        self.buckets = new_table
+
+class Node:
+    def __init__(self, key, value):
+        self.key = key
+        self.value = value
+        self.next = None
+
+
+class LinkedList:
+    def __init__(self):
+        self.head = None
+
+    def find(self, value):
+        cur = self.head
+        while cur is not None:
+            if cur.value == value:
+                return cur
+
+            cur = cur.next
+
+        return None
+
+    def append(self, value):  # add to tail
+        n = Node(value, value)
+
+        # no head
+        if self.head is None:
+            self.head = n
+        else:
+            cur = self.head
+
+            while cur.next is not None:
+                cur = cur.next
+
+            cur.next = n
+
+    def remove(self, value):
+        cur = self.head
+
+        # empty list
+        if cur is None:
+            return None
+
+        # delete head
+        if cur.value == value:
+            self.head = cur.next
+            return cur
+
+        else:
+            prev = cur
+            cur = cur.next
+            while cur is not None:
+                if cur.value == value:
+                    prev.next = cur.next
+                    return cur
+                else:
+                    prev = cur
+                    cur = cur.next
 
 
 if __name__ == "__main__":
@@ -151,3 +291,6 @@ if __name__ == "__main__":
         print(ht.get(f"line_{i}"))
 
     print("")
+
+
+# %%
