@@ -1,3 +1,5 @@
+
+
 class HashTableEntry:
     """
     Linked List hash table key/value pair
@@ -23,8 +25,8 @@ class HashTable:
 
     def __init__(self, capacity):
         # Your code here
-        self.buckets = [None] * capacity
-        self.capacity = capacity 
+        self.buckets = [LinkedList()] * capacity
+        self.capacity = capacity
 
     def get_num_slots(self):
         """
@@ -36,7 +38,7 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        return self.capacity
 
     def get_load_factor(self):
         """
@@ -44,6 +46,7 @@ class HashTable:
 
         Implement this.
         """
+
         # Your code here
 
     def fnv1(self, key):
@@ -66,20 +69,15 @@ class HashTable:
 
         """
         # Your code here
-        
+
         # set the hash
         hash = 5381
 
-        # encode the string
-        byte_arr = key.encode('utf-8')
-        
-        # hash each index in encoded_string
+        for char in key:
+            hash = ((hash << 5) + hash) + ord(char)
 
-        for byte in byte_arr:
-            hash = ((hash * 33) ^ byte) % 0x100000000 # 65536
-            # using the modulus keeps 32-bit so int doesnt overflow
-        return hash
-    
+        return hash & 0xFFFFFFFF
+
     def hash_index(self, key):
         """
         Take an arbitrary key and return a valid integer index
@@ -97,12 +95,30 @@ class HashTable:
         Implement this.
         """
 
+        # hash will look at key and make an index
         _hash = self.djb2(key)
         _index = self.hash_index(key)
 
-        entry = HashTableEntry(key, value)
-              
-        self.buckets[_index] = entry
+        # create a new node from the key, value pair
+        new_node = Node(key, value)
+
+        # check to see if a node exists in the spot we want to place this node
+        existing_node = self.buckets[_index].head
+
+        if existing_node:
+            last_node = None
+            while existing_node:
+                if existing_node.key == key:
+                    existing_node.value = value
+                    return
+                last_node = existing_node
+                existing_node = existing_node.next
+
+            last_node.next = new_node
+        else:
+            self.buckets[_index].append(new_node)
+
+        return self.buckets[_index].head
 
     def delete(self, key):
         """
@@ -117,7 +133,7 @@ class HashTable:
         _index = self.hash_index(key)
 
         # check to see if the entry exists
-        _exists = self.buckets[_index]
+        _exists = self.buckets[_index].head
         # check to see if exists is not None
         if _exists:
             last = None
@@ -129,15 +145,11 @@ class HashTable:
                     if last:
                         last.next = _exists.next
                     else:
-                        self.buckets[_index] = _exists.next
-                
+                        self.buckets[_index].remove(_exists.next)
+
                 # if we made it this far there needs to be a swap so the newer item is stored...
                 last = _exists
                 _exists = _exists.next
-        
-            
-
-
 
     def get(self, key):
         """
@@ -150,16 +162,18 @@ class HashTable:
         _hash = self.djb2(key)
         _index = self.hash_index(key)
 
-        _lookup = self.buckets[_index]
+        _lookup = self.buckets[_index].head # give me the head node from the list of the index given.
 
-        if _lookup:
-            while _lookup:
-                ## we found something
+        # if the head exists.
+        if _lookup is not None:
+            # while there is still something in the pile.
+            while _lookup is not None:
+                # we found something
                 if _lookup.key == key:
                     return _lookup.value
-                    
-                _lookup = _lookup.next;
-        
+
+                _lookup = _lookup.next
+
         return None
 
         # Your code here
@@ -172,6 +186,75 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        new_table = HashTable(new_capacity)
+        # looking at each of the buckets...
+        for i in range(len(self.buckets)):
+            # for each key value pair in the buckets head
+            node = self.buckets[i].head
+
+            while node.next is not None:
+                    new_table.put(node.key, node.value)
+                    node = node.next
+
+        self.buckets = new_table
+
+class Node:
+    def __init__(self, key, value):
+        self.key = key
+        self.value = value
+        self.next = None
+
+
+class LinkedList:
+    def __init__(self):
+        self.head = None
+
+    def find(self, value):
+        cur = self.head
+        while cur is not None:
+            if cur.value == value:
+                return cur
+
+            cur = cur.next
+
+        return None
+
+    def append(self, value):  # add to tail
+        n = Node(value, value)
+
+        # no head
+        if self.head is None:
+            self.head = n
+        else:
+            cur = self.head
+
+            while cur.next is not None:
+                cur = cur.next
+
+            cur.next = n
+
+    def remove(self, value):
+        cur = self.head
+
+        # empty list
+        if cur is None:
+            return None
+
+        # delete head
+        if cur.value == value:
+            self.head = cur.next
+            return cur
+
+        else:
+            prev = cur
+            cur = cur.next
+            while cur is not None:
+                if cur.value == value:
+                    prev.next = cur.next
+                    return cur
+                else:
+                    prev = cur
+                    cur = cur.next
 
 
 if __name__ == "__main__":
@@ -208,3 +291,6 @@ if __name__ == "__main__":
         print(ht.get(f"line_{i}"))
 
     print("")
+
+
+# %%
